@@ -8,20 +8,21 @@ const port = 3000;
 
 app.use(bodyParser.json());
 
-// 📌 รับ Webhook จาก LINE
+// 📌 Webhook รับข้อความจาก LINE
 app.post('/webhook', async (req, res) => {
   try {
     const events = req.body.events;
     for (const event of events) {
       if (event.type === 'message' && event.message.type === 'text') {
-        const userMessage = event.message.text;
+        const userMessage = event.message.text.trim();
         const replyToken = event.replyToken;
 
-        // ตรวจสอบข้อความจากผู้ใช้
-        if (userMessage.toLowerCase() === 'wifi') {
+        if (userMessage === 'ขอใช้บริการ Wi-Fi') {
           const guestUser = await createGuestUser();
-          const replyMessage = `✅ Wi-Fi Account:\nUsername: ${guestUser.username}\nPassword: ${guestUser.password}`;
+          const replyMessage = `✅ Wi-Fi Account:\n📌 Username: ${guestUser.username}\n🔑 Password: ${guestUser.password}\n📅 Expiry: ${guestUser.expiry}`;
           await sendLineReply(replyToken, replyMessage);
+        } else {
+          await sendLineReply(replyToken, '❓ กรุณาพิมพ์ "ขอใช้บริการ Wi-Fi" เพื่อรับบัญชี Wi-Fi');
         }
       }
     }
@@ -37,6 +38,8 @@ async function createGuestUser() {
   try {
     const username = `guest${Date.now()}`;
     const password = Math.random().toString(36).slice(-8);
+    const expiryDate = new Date();
+    expiryDate.setHours(expiryDate.getHours() + 4); // ตั้งอายุการใช้งาน 4 ชั่วโมง
 
     const response = await axios.post(
       `${config.ISE_BASE_URL}/ers/config/guestuser`,
@@ -47,6 +50,11 @@ async function createGuestUser() {
           userInfo: { 
             userName: username, 
             password: password 
+          },
+          guestAccessInfo: {
+            validDays: 0, // กำหนดวันหมดอายุ (0 = ใช้งานได้ภายในวันเดียว)
+            fromDate: new Date().toISOString(),
+            toDate: expiryDate.toISOString()
           }
         }
       },
@@ -56,14 +64,14 @@ async function createGuestUser() {
       }
     );
 
-    return { username, password };
+    return { username, password, expiry: expiryDate.toLocaleString() };
   } catch (error) {
     console.error('Error creating guest user:', error);
-    return { username: 'N/A', password: 'N/A' };
+    return { username: 'N/A', password: 'N/A', expiry: 'N/A' };
   }
 }
 
-// 📌 ฟังก์ชันตอบกลับ LINE
+// 📌 ฟังก์ชันส่งข้อความตอบกลับไปที่ LINE
 async function sendLineReply(replyToken, message) {
   try {
     await axios.post(
