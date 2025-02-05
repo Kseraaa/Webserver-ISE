@@ -92,7 +92,7 @@ async function getUserProfile(userId) {
           method: "GET",
           headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${process.env.LINE_ACCESS_TOKEN}`
+              "Authorization": `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`
           }
       });
 
