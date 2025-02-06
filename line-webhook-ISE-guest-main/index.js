@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import express from "express";
 import axios from "axios";
-import https from "https";
 import bodyParser from "body-parser";
 import checkingStatus from "./checkingStatus.mjs";
 import contact from "./contact.mjs";
@@ -11,7 +10,8 @@ import { LineHeaders } from "./utils.mjs";
 
 // นำเข้าเครื่องมือไลบรารีสำหรับการใช้งานใน Web Server
 dotenv.config();
-const agent = new https.Agent({ rejectUnauthorized: false });
+
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
 
 
 // สร้าง Instance ของ expess-js สำหรับสร้าง API
