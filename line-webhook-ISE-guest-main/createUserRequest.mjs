@@ -5,8 +5,6 @@ import request from "request";
 import https from "https";
 
 // ✅ ตั้งค่า Agent สำหรับ bypass SSL
-// const agent = new https.Agent({ rejectUnauthorized: false });
-
 /**
  * ฟังก์ชันสำหรับสร้าง Guest User บน Cisco ISE
  */
@@ -45,7 +43,6 @@ function createUserRequest(replyToken, username, password) {
         {
             url: `${ISE_ENDPOINT}/name/${username}`,
             headers: ISEHeaders,
-            // agent: agent, // ✅ ใช้ Agent เพื่อ bypass SSL
         },
         (err, res, body) => {
             if (err) {
@@ -64,7 +61,6 @@ function createUserRequest(replyToken, username, password) {
                         url: ISE_ENDPOINT,
                         headers: ISEHeaders,
                         body: JSON.stringify(payload),
-                        agent: agent, // ✅ ใช้ Agent เพื่อ bypass SSL
                     },
                     (err, res, body) => {
                         if (err) {

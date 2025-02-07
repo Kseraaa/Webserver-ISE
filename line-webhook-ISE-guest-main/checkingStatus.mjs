@@ -1,10 +1,8 @@
 import { ISEHeaders, ISE_ENDPOINT, LineHeaders } from "./utils.mjs";
 import request from "request";
 import moment from "moment";
-import https from "https";
 
-const agent = new https.Agent({ rejectUnauthorized: false });
-
+const formattedDate = moment("02/07/2025 10:15", "DD/MM/YYYY HH:mm").toISOString();
 
 const options = {
     method: 'POST',
@@ -109,7 +107,7 @@ async function checkingStatus(replyToken, username) {
                                                 layout: "baseline",
                                                 contents: [
                                                     { type: "text", text: "ใช้ได้ตั้งเเต่ :", weight: "bold", flex: 5, size: "md" },
-                                                    { type: "text", text: moment(userData.guestAccessInfo.fromDate).format("DD/MM/YYYY HH:mm"), flex: 5, size: "md" },
+                                                    { type: "text", text: formattedDate, flex: 5, size: "md" },
                                                 ],
                                             },
                                             {
@@ -117,7 +115,7 @@ async function checkingStatus(replyToken, username) {
                                                 layout: "baseline",
                                                 contents: [
                                                     { type: "text", text: "จนถึง :", weight: "bold", flex: 5, size: "md" },
-                                                    { type: "text", text: moment(userData.guestAccessInfo.toDate).format("DD/MM/YYYY HH:mm"), flex: 5, size: "md" },
+                                                    { type: "text", text: formattedDate, flex: 5, size: "md" },
                                                 ],
                                             },
                                             {
