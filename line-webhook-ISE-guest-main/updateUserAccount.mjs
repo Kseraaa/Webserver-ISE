@@ -32,7 +32,7 @@ function updateUserAccount(replyToken, username, password) {
                 toDate: moment(toDate).format("MM/DD/YYYY HH:mm"),
                 location: "THAILAND",
             },
-            portalId: "8d9d4f0f-c7dd-4e4e-817c-ca14442c034b",
+            portalId: process.env.ISE_PORTAL_ID,
         },
     };
 

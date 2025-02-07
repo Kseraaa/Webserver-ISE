@@ -8,19 +8,17 @@ import createUserRequest from "./createUserRequest.mjs";
 import updateUserAccount from "./updateUserAccount.mjs";
 import { LineHeaders } from "./utils.mjs";
 
-// นำเข้าเครื่องมือไลบรารีสำหรับการใช้งานใน Web Server
+//library สำหรับอ่านไฟล์ .env
 dotenv.config();
 
+// กำหนดค่าให้ Node-js ไม่สนใจความถูกต้องของ SSL Cert ในการติดต่อ API ต่างๆ 
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
-
 
 // สร้าง Instance ของ expess-js สำหรับสร้าง API
 const app = express();
 
 // กำหนด Port สำหรับการทำงานเป็น 3000 หรือสามารถกำหนดใน .env ได้ผ่าน 'PORT=หมายเลข PORT'
 const port = process.env.PORT || 3000;
-
-// กำหนดค่าให้ Node-js ไม่สนใจความถูกต้องของ SSL Cert ในการติดต่อ API ต่างๆ 
 
 // กำหนดให้ใช้ body-parser ร่วมกับ express-js ในการอ่านเขียนข้อมูลผ่าน API
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -44,12 +42,11 @@ app.post("/", async (req, res) => {
     /*
     *   ทำการสร้าง username เเละ password จาก userId ที่เป็นอัตลักษณ์ของผู้ใช้ใน LINE
     *   (userId สามารถใช้จากตัวเเปร userId โดยตรงได้ หรือจะใช้อัตลักษณือย่างอื่นของผู้ใช้ในการสร้างได้)
-    *   username -> เก็บ username โดยจะอยู่ในรูปเเบบ 'user-XXXXXX' (XXXXXX เป็น 6 ตัวอักษรเเรกจาก userId)
-    *   password -> เก็บ password โดยจะเป็นตัวอักษร 6 ตัว จาก userId (ตั้งเเต่ตัวที่ 7 ไปตัวที่ 12)
-    *   **สามารถปรับได้ตามความเหมาะสม
+    *   username -> เก็บ username โดยจะอยู่ในรูปเเบบ 'user-XXXX' (XXXX เป็น 4 ตัวอักษรเเรกจาก userId)
+    *   password -> เก็บ password โดยเป็นตัวเลขแบบสุ่ม 4 ตัว
     */
-    const username = "user-" + userProfile.userId.slice(0, 6);
-    const password = userProfile.userId.slice(6, 12);
+    const username = "user-" + userProfile.userId.slice(0, 4);
+    const password = Math.floor(1000 + Math.random() * 9000).toString(); // สร้างรหัสผ่านแบบสุ่ม 4 หลัก
     
     // ส่วนสำหรับการเเบ่งการทำงานตามคำสั่งต่าง ๆ ที่ผู้ใช้ request 
     switch (message) {

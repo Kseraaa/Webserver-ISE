@@ -3,117 +3,94 @@ import contact from "./contact.mjs";
 import createUserRequest from "./createUserRequest.mjs";
 import updateUserAccount from "./updateUserAccount.mjs";
 import { LineHeaders } from "./utils.mjs";
-import fetch from "node-fetch";
 
 // นำเข้าเครื่องมือไลบรารีสำหรับการใช้งานใน Web Server
-import "dotenv/config";
-import express from "express";
-import bodyParser from "body-parser";
+import "dotenv/config";                     //เครื่องมือสำหรับอ่านไฟล์ .env
+import express from "express";              //เครื่องมือสำหรับการทำ API
+import request from "request";              //เครื่องมือ HTTP Request Client สำหรับการใช้งาน API
+import bodyParser from "body-parser";       //เครื่องมือสำหรับช่วยอ่านข้อมูลที่มาจาก API
 
-// ปิดการตรวจสอบ SSL (ใช้กับเซิร์ฟเวอร์ภายในเท่านั้น)
+//สร้าง Instance ของ expess-js สำหรับสร้าง API
+const app = express();
+
+//กำหนด Port สำหรับการทำงานเป็น 4000 หรือสามารถกำหนดใน .env ได้ผ่าน 'PORT=หมายเลข PORT'
+const port = process.env.PORT || 4000;
+
+//กำหนดค่าให้ Node-js ไม่สนใจความถูกต้องของ SSL Cert ในการติดต่อ API ต่างๆ 
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
 
-// สร้าง instance ของ Express
-const app = express();
-const port = process.env.PORT || 3000;
-
-
-// กำหนดให้ Express ใช้งาน body-parser
+//กำหนดให้ใช้ body-parser ร่วมกับ express-js ในการอ่านเขียนข้อมูลผ่าน API
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// API Endpoint หลักสำหรับ LINE Bot
+//กำหนด API endpoint "/" เป็น endpoint หลักสำหรับใช้งานเป็น Webhook ให้กับ LINE Bot
 app.post("/", async (req, res) => {
-    try {
-        console.log("📌 ได้รับ Request แล้ว:", req.body);
+    /*
+    *   จัดเก็บข้อมูลจากการ Request มาจากผู้ใช้ที่ใช้งาน LINE Bot
+    *   ReplyToken -> เก็บ Token สำหรับใช้ให้ LINE API ตอบกลับไปยังผู้ใช้คนนั้น ๆ ที่กำลังใช้งาน
+    *   message -> เก็บข้อความหรือคำสั่งที่ผู้ใช้ป้อนให้กับ LINE Bot
+    *   userId -> เก็บ LINE userId ของผู้ใช้
+    */
+    const replyToken = req.body.events[0].replyToken;
+    const message = req.body.events[0].message.text;
+    const userId = req.body.events[0].source.userId;
 
-        const replyToken = req.body.events?.[0]?.replyToken;
-        const message = req.body.events?.[0]?.message?.text;
-        const userId = req.body.events?.[0]?.source?.userId;
+    //ดึงเเละจัดเก็บข้อมูลส่วนตัวของผู้ใช้ผ่านการเรียกใช้งานฟังก์ชัน getUserProfile(userId: string)
+    const userProfile = await getUserProfile(userId);
 
-        if (!userId) {
-            throw new Error("❌ ไม่พบ userId ใน request");
-        }
-
-        console.log("📌 Reply Token:", replyToken);
-        console.log("📌 Message:", message);
-        console.log("📌 User ID:", userId);
-
-        // ดึงข้อมูล User Profile จาก LINE API
-        const userProfile = await getUserProfile(userId);
-        console.log("📌 User Profile:", userProfile);
-
-        if (!userProfile?.userId) {
-            throw new Error("❌ userProfile ไม่มี userId");
-        }
-
-        // กำหนด username และ password จาก userId
-        const username = "user-" + userProfile.userId.slice(0, 6);
-        const password = userProfile.userId.slice(6, 12);
-
-        // การจัดการคำสั่งจาก LINE Bot
-        switch (message) {
-            case "ขอใช้บริการ":
-                createUserRequest(replyToken, username, password);
-                break;
-            case "ตรวจสอบสถานะ":
-                checkingStatus(replyToken, username);
-                break;
-            case "ติดต่อสอบถาม":
-                contact(replyToken);
-                break;
-            case "ขยายเวลา":
-                updateUserAccount(replyToken, username, password);
-                break;
-            default:
-                console.log("❌ ไม่พบคำสั่งที่รองรับ:", message);
-                break;
-        }
-
-        res.sendStatus(200);
-    } catch (error) {
-        console.error("❌ เกิดข้อผิดพลาด:", error.message);
-        res.status(500).json({ error: "Internal Server Error", details: error.message });
+    /*
+    *   ทำการสร้าง username เเละ password จาก userId ที่เป็นอัตลักษณ์ของผู้ใช้ใน LINE
+    *   (userId สามารถใช้จากตัวเเปร userId โดยตรงได้ หรือจะใช้อัตลักษณือย่างอื่นของผู้ใช้ในการสร้างได้)
+    *   username -> เก็บ username โดยจะอยู่ในรูปเเบบ 'user-XXXXXX' (XXXXXX เป็น 6 ตัวอักษรเเรกจาก userId)
+    *   password -> เก็บ password โดยจะเป็นตัวอักษร 6 ตัว จาก userId (ตั้งเเต่ตัวที่ 7 ไปตัวที่ 12)
+    *   **สามารถปรับได้ตามความเหมาะสม
+    */
+    const username = "user-" + userProfile.userId.slice(0, 6);
+    const password = userProfile.userId.slice(6, 12);
+    
+    //ส่วนสำหรับการเเบ่งการทำงานตามคำสั่งต่าง ๆ ที่ผู้ใช้ request 
+    switch (message) {
+        case "ขอใช้บริการ":
+            createUserRequest(replyToken, username, password);
+            break;
+        case "ตรวจสอบสถานะ":
+            checkingStatus(replyToken, username);
+            break;
+        case "ติดต่อสอบถาม":
+            contact(replyToken);
+            break;
+        case "ขยายเวลา":
+            updateUserAccount(replyToken, username, password);
+            break;
     }
+
+    //เมื่อเสร็จสิ้นกระบวนการ ทำการส่งรหัสสถานะเป็น 200 ให้กับ LINE Bot
+    res.sendStatus(200);
 });
 
-/**
- * ฟังก์ชันดึงข้อมูล User Profile จาก LINE API
- */
-async function getUserProfile(userId) {
-  try {
-      if (!userId) {
-          throw new Error("❌ ไม่มี userId ส่งไปยัง LINE API");
-      }
-
-      console.log("📌 userId ที่ส่งไปยัง LINE API:", userId);
-
-      const response = await fetch(`https://api.line.me/v2/bot/profile/${userId}`, {
-          method: "GET",
-          headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`
-          }
-      });
-
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`❌ LINE API ตอบกลับรหัส ${response.status}: ${errorText}`);
-      }
-
-      const userProfile = await response.json();
-      console.log("📌 User Profile ที่ได้รับ:", userProfile);
-      return userProfile;
-  } catch (error) {
-      console.error("❌ Error in getUserProfile:", error);
-      throw error;
-  }
+/*
+*   ฟังก์ชันสำหรับการดึงข้อมูลอัตลักษณ์ของผู้ใช้จาก LINE API
+*   (https://developers.line.biz/en/reference/messaging-api/#get-profile)
+*/
+function getUserProfile(userId) {
+    return new Promise((resolve, reject) => {
+        let userProfile = {};
+        try {
+            request.get(
+                {
+                    url: `https://api.line.me/v2/bot/profile/${userId}`,
+                    headers: LineHeaders,
+                },
+                (err, res, body) => {
+                    userProfile = JSON.parse(body);
+                    console.log("get user status = " + res.statusCode);
+                    resolve(userProfile);
+                }
+            );
+        } catch (e) {
+            console.error(e);
+        }
+    });
 }
 
-
-
-
-// เริ่มต้นเซิร์ฟเวอร์
-app.listen(port, () => {
-    console.log(`🚀 Server is running on http://localhost:${port}`);
-});
+app.listen(port);
