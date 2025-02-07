@@ -2,12 +2,8 @@ import { ISEHeaders, ISE_ENDPOINT, LineHeaders } from "./utils.mjs";
 import checkingStatus from "./checkingStatus.mjs";
 import moment from "moment";
 import request from "request";
-import https from "https";
 
-// ✅ ตั้งค่า Agent สำหรับ bypass SSL
-/**
- * ฟังก์ชันสำหรับสร้าง Guest User บน Cisco ISE
- */
+ //ฟังก์ชันสำหรับสร้าง Guest User บน Cisco ISE
 function createUserRequest(replyToken, username, password) {
     const fromDate = new Date();
     const toDate = new Date(fromDate);
