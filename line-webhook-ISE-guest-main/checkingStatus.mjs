@@ -2,8 +2,6 @@ import { ISEHeaders, ISE_ENDPOINT, LineHeaders } from "./utils.mjs";
 import request from "request";
 import moment from "moment";
 
-const formattedDate = moment("02/07/2025 10:15", "DD/MM/YYYY HH:mm").toISOString();
-
 const options = {
     method: 'POST',
     url: 'https://10.10.1.177:9060/ers/config/guestuser',
@@ -71,6 +69,24 @@ async function checkingStatus(replyToken, username) {
                 }
 
                 if (res.statusCode == 200) {
+                    const fromDate = new Date(userData.guestAccessInfo.fromDate).toLocaleString("th-TH", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                    });
+
+                    const toDate = new Date(userData.guestAccessInfo.toDate).toLocaleString("th-TH", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                    });
+
                     message = {
                         type: "flex",
                         altText: "รายละเอียดของผู้ใช้",
@@ -107,7 +123,7 @@ async function checkingStatus(replyToken, username) {
                                                 layout: "baseline",
                                                 contents: [
                                                     { type: "text", text: "ใช้ได้ตั้งเเต่ :", weight: "bold", flex: 5, size: "md" },
-                                                    { type: "text", text: formattedDate, flex: 5, size: "md" },
+                                                    { type: "text", text: fromDate, flex: 5, size: "md" },
                                                 ],
                                             },
                                             {
@@ -115,7 +131,7 @@ async function checkingStatus(replyToken, username) {
                                                 layout: "baseline",
                                                 contents: [
                                                     { type: "text", text: "จนถึง :", weight: "bold", flex: 5, size: "md" },
-                                                    { type: "text", text: formattedDate, flex: 5, size: "md" },
+                                                    { type: "text", text: toDate, flex: 5, size: "md" },
                                                 ],
                                             },
                                             {
