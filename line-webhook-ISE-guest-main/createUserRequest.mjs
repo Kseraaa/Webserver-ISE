@@ -1,25 +1,28 @@
 import { ISEHeaders, ISE_ENDPOINT, LineHeaders } from "./utils.mjs";
 import checkingStatus from "./checkingStatus.mjs";
-import { DateTime } from "luxon";  // ✅ ใช้ luxon แทน moment
+import { DateTime } from "luxon";
 import request from "request";
 
-// ฟังก์ชันสำหรับสร้าง Guest User บน Cisco ISE
+// ฟังก์ชันสำหรับการสร้างผู้ใช้ให้กับ Cisco ISE ผ่าน API
 function createUserRequest(replyToken, username, password) {
-    // ✅ ตั้งค่าเวลาตาม Time Zone ไทย (Asia/Bangkok)
-    const fromDate = DateTime.now().setZone("Asia/Bangkok");
+    /*
+     *   กำหนดช่วงเวลาให้กับผู้ใช้ในการเข้าถึงบริการ
+     *   fromDate -> เวลา ณ การร้องขอใช้บริการของผู้ใช้
+     *   toDate -> เวลาจาก fromDate ไป 1 วัน
+     */
+    const fromDate = DateTime.now();
     const toDate = fromDate.plus({ days: 1 });
 
-    // ✅ Debug ค่าเวลาที่ถูกส่งไปยัง Cisco ISE
-    console.log("📡 เวลาที่ถูกส่งไปยัง Cisco ISE:");
-    console.log("📅 fromDate:", fromDate.toFormat("MM/dd/yyyy HH:mm"));
-    console.log("📅 toDate  :", toDate.toFormat("MM/dd/yyyy HH:mm"));
-
-    // ✅ สร้าง payload
+    /*
+     *   กำหนด payload สำหรับข้อมูลที่จะส่งให้กับ ISE ในการสร้างผู้ใช้ผ่าน API
+     *   (https://developer.cisco.com/docs/identity-services-engine/latest/guestuser/)
+     */
     const payload = {
         GuestUser: {
-            name: username,
+            name: "",
+            id: "",
             guestType: "Guest-Daily",
-            status: "ACTIVE",
+            status: "",
             guestInfo: {
                 userName: username,
                 password: password,
@@ -28,7 +31,7 @@ function createUserRequest(replyToken, username, password) {
             guestAccessInfo: {
                 validDays: 1,
                 location: "THAILAND",
-                fromDate: fromDate.toFormat("MM/dd/yyyy HH:mm"), // ✅ ใช้ luxon แปลงเวลา
+                fromDate: fromDate.toFormat("MM/dd/yyyy HH:mm"),
                 toDate: toDate.toFormat("MM/dd/yyyy HH:mm"),
             },
             portalId: process.env.ISE_PORTAL_ID, // ✅ ตรวจสอบว่า `ISE_PORTAL_ID` มีค่า
@@ -36,82 +39,51 @@ function createUserRequest(replyToken, username, password) {
         },
     };
 
-    console.log("📡 ส่ง Request ไปยัง Cisco ISE...");
-    console.log("🔗 ISE_ENDPOINT:", ISE_ENDPOINT);
-
-    // ✅ ตรวจสอบว่าผู้ใช้นี้มีอยู่แล้วหรือไม่
-    request.get(
-        {
-            url: `${ISE_ENDPOINT}/name/${username}`,
-            headers: ISEHeaders,
-        },
-        (err, res, body) => {
-            if (err) {
-                console.error("❌ Request error:", err);
-                sendMessage(replyToken, "เกิดข้อผิดพลาดในการเชื่อมต่อกับ ISE");
-                return;
-            }
-
-            if (res && res.statusCode === 200) {
-                console.log("⚠️ ผู้ใช้มีอยู่แล้วในระบบ");
-                sendMessage(replyToken, "บัญชีของคุณมีอยู่แล้ว กรุณากด 'ตรวจสอบ' เพื่อดูสถานะ");
-            } else {
-                // ✅ ถ้ายังไม่มีผู้ใช้ ให้สร้างใหม่
-                request.post(
-                    {
-                        url: ISE_ENDPOINT,
-                        headers: ISEHeaders,
-                        body: JSON.stringify(payload),
-                    },
-                    (err, res, body) => {
-                        if (err) {
-                            console.error("❌ Request error:", err);
-                            sendMessage(replyToken, "เกิดข้อผิดพลาดในการเชื่อมต่อกับ ISE");
-                            return;
+    // ทำการส่งข้อมูลให้กับ ISE เพื่อสร้างบัญชีผู้ใช้
+    try {
+        request.post(
+            {
+                url: ISE_ENDPOINT,
+                headers: ISEHeaders,
+                body: JSON.stringify(payload),
+            },
+            (err, res, body) => {
+                if (res.statusCode === 201) {
+                    /*
+                     *   กรณีที่สร้างบัญชีผู้ใช้ไว้บน ISE สำเร็จ ให้ทำการเรียกใช้ฟังก์ชัน checkingStatus(replyToken: string, username: string)
+                     *   เพื่อทำการเเสดงข้อมูลต่อไป
+                     */
+                    checkingStatus(replyToken, username);
+                } else {
+                    /*
+                     *   กรณีที่สร้างบัญชีผู้ใช้ไว้บน ISE ไม่สำเร็จ ให้ทำการเเจ้งให้กับผู้ใช้ผ่าน LINE API เป็นข้อความ
+                     *   (https://developers.line.biz/en/reference/messaging-api/#send-reply-message)
+                     */
+                    const message = "มีผู้ใช้นี้อยู่ในระบบเเล้วหรือเกิดข้อผิดพลาด\nกรุณากด 'ตรวจสอบสถานะ'";
+                    request.post(
+                        {
+                            url: "https://api.line.me/v2/bot/message/reply",
+                            headers: LineHeaders,
+                            body: JSON.stringify({
+                                replyToken: replyToken,
+                                messages: [
+                                    {
+                                        type: "text",
+                                        text: message,
+                                    },
+                                ],
+                            }),
+                        },
+                        (err, res, body) => {
+                            console.log("status = " + res.statusCode);
                         }
-
-                        if (!res) {
-                            console.error("❌ Response is undefined");
-                            sendMessage(replyToken, "ไม่สามารถรับข้อมูลจาก ISE ได้");
-                            return;
-                        }
-
-                        console.log("📡 Response Status:", res.statusCode);
-                        console.log("📡 Response Body:", body);
-
-                        if (res.statusCode === 201) {
-                            console.log("✅ สร้าง Guest User สำเร็จ");
-                            checkingStatus(replyToken, username);
-                        } else {
-                            console.log("❌ สร้าง Guest User ไม่สำเร็จ");
-                            sendMessage(replyToken, "เกิดข้อผิดพลาดในการสร้างบัญชี กรุณาลองใหม่อีกครั้ง");
-                        }
-                    }
-                );
+                    );
+                }
             }
-        }
-    );
-}
-
-// ✅ ฟังก์ชันส่งข้อความแจ้งเตือนใน LINE
-function sendMessage(replyToken, message) {
-    request.post(
-        {
-            url: "https://api.line.me/v2/bot/message/reply",
-            headers: LineHeaders,
-            body: JSON.stringify({
-                replyToken: replyToken,
-                messages: [{ type: "text", text: message }],
-            }),
-        },
-        (err, res, body) => {
-            if (err) {
-                console.error("❌ LINE API Error:", err);
-            } else {
-                console.log("📡 LINE API Response:", res.statusCode);
-            }
-        }
-    );
+        );
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 export default createUserRequest;
