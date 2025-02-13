@@ -39,15 +39,13 @@ app.post("/", async (req, res) => {
     // ดึงเเละจัดเก็บข้อมูลส่วนตัวของผู้ใช้ผ่านการเรียกใช้งานฟังก์ชัน getUserProfile(userId: string)
     const userProfile = await getUserProfile(userId);
 
-    /*
-    *   ทำการสร้าง username เเละ password จาก userId ที่เป็นอัตลักษณ์ของผู้ใช้ใน LINE
-    *   (userId สามารถใช้จากตัวเเปร userId โดยตรงได้ หรือจะใช้อัตลักษณือย่างอื่นของผู้ใช้ในการสร้างได้)
-    *   username -> เก็บ username โดยจะอยู่ในรูปเเบบ 'user-XXXX' (XXXX เป็น 4 ตัวอักษรเเรกจาก userId)
-    *   password -> เก็บ password โดยเป็นตัวเลขแบบสุ่ม 4 ตัว
-    */
-    const username = "user-" + userProfile.userId.slice(0, 4);
-    const password = Math.floor(1000 + Math.random() * 9000).toString(); // สร้างรหัสผ่านแบบสุ่ม 4 หลัก
-    
+    //สร้าง username = user+เลข4ตัวเลขของ userID
+    //สร้าง password = user2ตัวเเรก + เลข4ตัวสุดท้ายของ userID
+    const username = "user" + userProfile.userId.replace(/\D/g, "").slice(0, 4);
+    const password = userProfile.userId.slice(0, 2) + userProfile.userId.replace(/\D/g, "").slice(-4);
+
+    console.log(username, password);
+
     // ส่วนสำหรับการเเบ่งการทำงานตามคำสั่งต่าง ๆ ที่ผู้ใช้ request 
     switch (message) {
         case "ขอใช้บริการ":

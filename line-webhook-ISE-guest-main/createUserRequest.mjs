@@ -5,11 +5,8 @@ import request from "request";
 
 // ฟังก์ชันสำหรับการสร้างผู้ใช้ให้กับ Cisco ISE ผ่าน API
 function createUserRequest(replyToken, username, password) {
-    /*
-     *   กำหนดช่วงเวลาให้กับผู้ใช้ในการเข้าถึงบริการ
-     *   fromDate -> เวลา ณ การร้องขอใช้บริการของผู้ใช้
-     *   toDate -> เวลาจาก fromDate ไป 1 วัน
-     */
+    
+    //กำหนดเวลาที่ใช้งานได้
     const fromDate = DateTime.now();
     const toDate = fromDate.plus({ days: 1 });
 
@@ -59,7 +56,7 @@ function createUserRequest(replyToken, username, password) {
                      *   กรณีที่สร้างบัญชีผู้ใช้ไว้บน ISE ไม่สำเร็จ ให้ทำการเเจ้งให้กับผู้ใช้ผ่าน LINE API เป็นข้อความ
                      *   (https://developers.line.biz/en/reference/messaging-api/#send-reply-message)
                      */
-                    const message = "มีผู้ใช้นี้อยู่ในระบบเเล้วหรือเกิดข้อผิดพลาด\nกรุณากด 'ตรวจสอบสถานะ'";
+                    const message = "มีผู้ใช้นี้อยู่ในระบบเเล้ว\nกรุณากด 'ตรวจสอบสถานะ'";
                     request.post(
                         {
                             url: "https://api.line.me/v2/bot/message/reply",

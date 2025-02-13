@@ -2,11 +2,17 @@ import { ISEHeaders, ISE_ENDPOINT, LineHeaders } from "./utils.mjs";
 import request from "request";
 import { DateTime } from "luxon";
 
+function formatDate(date) {
+    return new Date(date).toLocaleString("th-TH", {
+        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false
+    });
+}
+
 function createFlexMessage(userData) {
     const { name, guestInfo, guestAccessInfo, status, guestType } = userData;
     const statusColor = status === "ACTIVE" ? "#1DB446" : "#FF6B6E";
-    const fromDate = DateTime.now().setZone("Asia/Bangkok");
-    const toDate = fromDate.plus({ days: 1 });
+    const fromDate = formatDate(userData.guestAccessInfo.fromDate);
+    const toDate = formatDate(userData.guestAccessInfo.toDate);
 
     return {
         type: "flex",
@@ -20,18 +26,16 @@ function createFlexMessage(userData) {
                     { type: "separator", margin: "md" },
                     createTextButton("Username", name),
                     createTextButton("Password", guestInfo.password),
-                    createInfoRow("ใช้ได้ตั้งแต่", fromDate.toFormat("MM/dd/yyyy HH:mm")),
-                    createInfoRow("จนถึง", toDate.toFormat("MM/dd/yyyy HH:mm")),
+                    createInfoRow("ใช้ได้ตั้งแต่", fromDate),
+                    createInfoRow("จนถึง", toDate),
                     createInfoRow("สถานะ", status, statusColor),
                     createInfoRow("ประเภทผู้ใช้", guestType),
-                    ...(status === "ACTIVE" ? [createExtendButton()] : [])
+                    ...(status === "ACTIVE" ? [createExtendButton()] : []) //ใช้ ACTIVE เพื่อ TEST ใช้จริงเปลี่ยนเป็น EXPIRED
                 ]
             }
         }
     };
 }
-
-const formatDate = (dateStr) => DateTime.fromISO(dateStr).toFormat("dd/MM/yyyy HH:mm");
 
 const createTextButton = (label, text) => ({
     type: "box", layout: "vertical", contents: [
