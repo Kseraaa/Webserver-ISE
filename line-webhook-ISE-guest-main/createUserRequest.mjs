@@ -1,15 +1,20 @@
 import { ISEHeaders, ISE_ENDPOINT, LineHeaders } from "./utils.mjs";
 import checkingStatus from "./checkingStatus.mjs";
-import moment from "moment";
+import { DateTime } from "luxon";  // ✅ ใช้ luxon แทน moment
 import request from "request";
 
- //ฟังก์ชันสำหรับสร้าง Guest User บน Cisco ISE
+// ฟังก์ชันสำหรับสร้าง Guest User บน Cisco ISE
 function createUserRequest(replyToken, username, password) {
-    const fromDate = new Date();
-    const toDate = new Date(fromDate);
-    toDate.setDate(toDate.getDate() + 1);
+    // ✅ ตั้งค่าเวลาตาม Time Zone ไทย (Asia/Bangkok)
+    const fromDate = DateTime.now().setZone("Asia/Bangkok");
+    const toDate = fromDate.plus({ days: 1 });
 
-    // ✅ แก้ไขให้ใส่ `name` และ `status`
+    // ✅ Debug ค่าเวลาที่ถูกส่งไปยัง Cisco ISE
+    console.log("📡 เวลาที่ถูกส่งไปยัง Cisco ISE:");
+    console.log("📅 fromDate:", fromDate.toFormat("MM/dd/yyyy HH:mm"));
+    console.log("📅 toDate  :", toDate.toFormat("MM/dd/yyyy HH:mm"));
+
+    // ✅ สร้าง payload
     const payload = {
         GuestUser: {
             name: username,
@@ -23,8 +28,8 @@ function createUserRequest(replyToken, username, password) {
             guestAccessInfo: {
                 validDays: 1,
                 location: "THAILAND",
-                fromDate: moment(fromDate).format("MM/DD/YYYY HH:mm"),
-                toDate: moment(toDate).format("MM/DD/YYYY HH:mm"),
+                fromDate: fromDate.toFormat("MM/dd/yyyy HH:mm"), // ✅ ใช้ luxon แปลงเวลา
+                toDate: toDate.toFormat("MM/dd/yyyy HH:mm"),
             },
             portalId: process.env.ISE_PORTAL_ID, // ✅ ตรวจสอบว่า `ISE_PORTAL_ID` มีค่า
             customFields: {},
