@@ -10,6 +10,10 @@ function createUserRequest(replyToken, username, password) {
     const fromDate = DateTime.now();
     const toDate = fromDate.plus({ days: 1 });
 
+    console.log(fromDate)
+    console.log(toDate)
+
+
     /*
      *   กำหนด payload สำหรับข้อมูลที่จะส่งให้กับ ISE ในการสร้างผู้ใช้ผ่าน API
      *   (https://developer.cisco.com/docs/identity-services-engine/latest/guestuser/)
@@ -19,7 +23,7 @@ function createUserRequest(replyToken, username, password) {
             name: "",
             id: "",
             guestType: "Guest-Daily",
-            status: "",
+            status: "ACTIVE",
             guestInfo: {
                 userName: username,
                 password: password,

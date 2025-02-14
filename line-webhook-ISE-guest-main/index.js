@@ -41,7 +41,7 @@ app.post("/", async (req, res) => {
 
     //สร้าง username = user+เลข4ตัวเลขของ userID
     //สร้าง password = user2ตัวเเรก + เลข4ตัวสุดท้ายของ userID
-    const username = "user" + userProfile.userId.replace(/\D/g, "").slice(0, 4);
+    const username = "user-" + userProfile.userId.slice(0, 4);
     const password = userProfile.userId.slice(0, 2) + userProfile.userId.replace(/\D/g, "").slice(-4);
 
     console.log(username, password);
@@ -75,6 +75,7 @@ async function getUserProfile(userId) {
         const response = await axios.get(`https://api.line.me/v2/bot/profile/${userId}`, {
             headers: LineHeaders
         });
+        console.log(userId)
         console.log("get user status = " + response.status);
         return response.data;
     } catch (e) {
