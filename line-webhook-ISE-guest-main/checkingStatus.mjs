@@ -1,5 +1,5 @@
 import { ISEHeaders, ISE_ENDPOINT, LineHeaders } from "./utils.mjs";
-import request from "request";
+import axios from "axios";
 
 function formatDate(date) {
     return new Date(date).toLocaleString("th-TH", {
@@ -54,20 +54,32 @@ const createExtendButton = () => ({
     type: "button", action: { type: "message", label: "ขยายเวลาการใช้งาน", text: "ขยายเวลา" }, style: "primary", color: "#ff7f50", margin: "lg", height: "md"
 });
 
-function checkingStatus(replyToken, username) {
-    request.get({ url: `${ISE_ENDPOINT}/name/${username}`, headers: ISEHeaders }, (err, res, body) => {
+async function checkingStatus(replyToken, username) {
+    try {
+        const { data } = await axios.get(`${ISE_ENDPOINT}/name/${username}`, { headers: ISEHeaders });
+
+        const message = createFlexMessage(data.GuestUser);
+        await axios.post("https://api.line.me/v2/bot/message/reply", {
+            replyToken,
+            messages: [message]
+        }, { headers: LineHeaders });
+
+        console.log("checking status done");
+    } catch (error) {
         let message;
-        if (res.statusCode === 200) {
-            message = createFlexMessage(JSON.parse(body).GuestUser);
+        if (error.response?.status === 404) {
+            message = { type: "text", text: "คุณยังไม่ได้ขอใช้บริการ\nกรุณากด 'ขอใช้บริการ WIFI' เพื่อเริ่มต้นการใช้งาน" };
         } else {
-            message = { type: "text", text: res.statusCode === 404 ? "คุณยังไม่ได้ขอใช้บริการ\nกรุณากด 'ขอใช้บริการ WIFI' เพื่อเริ่มต้นการใข้บริการ" : "เกิดข้อผิดพลาด กรุณาดำเนินใหม่อีกครั้งหรือติดต่อเจ้าหน้าที่" };
+            message = { type: "text", text: "เกิดข้อผิดพลาด กรุณาดำเนินใหม่อีกครั้งหรือติดต่อเจ้าหน้าที่" };
         }
-        request.post({
-            url: "https://api.line.me/v2/bot/message/reply",
-            headers: LineHeaders,
-            body: JSON.stringify({ replyToken, messages: [message] })
-        }, () => console.log("checking status done"));
-    });
+
+        await axios.post("https://api.line.me/v2/bot/message/reply", {
+            replyToken,
+            messages: [message]
+        }, { headers: LineHeaders });
+
+        console.error("Error:", error.message);
+    }
 }
 
 export default checkingStatus;

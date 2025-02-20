@@ -1,7 +1,7 @@
+import axios from "axios";
 import { LineHeaders } from "./utils.mjs";
-import request from "request";
 
-function contact(replyToken) {
+async function contact(replyToken) {
     const message = {
         type: "flex",
         altText: "ติดต่อสอบถาม",
@@ -30,11 +30,15 @@ function contact(replyToken) {
         }
     };
 
-    request.post({
-        url: "https://api.line.me/v2/bot/message/reply",
-        headers: LineHeaders,
-        body: JSON.stringify({ replyToken, messages: [message] })
-    }, () => console.log("contact done"));
+    try {
+        await axios.post("https://api.line.me/v2/bot/message/reply", 
+            { replyToken, messages: [message] }, 
+            { headers: LineHeaders }
+        );
+        console.log("contact done");
+    } catch (error) {
+        console.error("Error sending contact message:", error.message);
+    }
 }
 
 const infoRow = (label, value, isLink = false) => ({

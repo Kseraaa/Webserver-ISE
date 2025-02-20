@@ -1,23 +1,16 @@
+import axios from "axios";
 import { ISEHeaders, ISE_ENDPOINT, LineHeaders } from "./utils.mjs";
 import checkingStatus from "./checkingStatus.mjs";
 import { DateTime } from "luxon";
-import request from "request";
 
 // ฟังก์ชันสำหรับการสร้างผู้ใช้ให้กับ Cisco ISE ผ่าน API
-function createUserRequest(replyToken, username, password) {
-    
-    //กำหนดเวลาที่ใช้งานได้
+async function createUserRequest(replyToken, username, password) {
     const fromDate = DateTime.now();
     const toDate = fromDate.plus({ days: 1 });
 
-    console.log(fromDate)
-    console.log(toDate)
+    console.log(fromDate.toISO());
+    console.log(toDate.toISO());
 
-
-    /*
-     *   กำหนด payload สำหรับข้อมูลที่จะส่งให้กับ ISE ในการสร้างผู้ใช้ผ่าน API
-     *   (https://developer.cisco.com/docs/identity-services-engine/latest/guestuser/)
-     */
     const payload = {
         GuestUser: {
             name: "",
@@ -35,55 +28,35 @@ function createUserRequest(replyToken, username, password) {
                 fromDate: fromDate.toFormat("MM/dd/yyyy HH:mm"),
                 toDate: toDate.toFormat("MM/dd/yyyy HH:mm"),
             },
-            portalId: process.env.ISE_PORTAL_ID, // ✅ ตรวจสอบว่า `ISE_PORTAL_ID` มีค่า
+            portalId: process.env.ISE_PORTAL_ID,
             customFields: {},
         },
     };
 
-    // ทำการส่งข้อมูลให้กับ ISE เพื่อสร้างบัญชีผู้ใช้
     try {
-        request.post(
-            {
-                url: ISE_ENDPOINT,
-                headers: ISEHeaders,
-                body: JSON.stringify(payload),
-            },
-            (err, res, body) => {
-                if (res.statusCode === 201) {
-                    /*
-                     *   กรณีที่สร้างบัญชีผู้ใช้ไว้บน ISE สำเร็จ ให้ทำการเรียกใช้ฟังก์ชัน checkingStatus(replyToken: string, username: string)
-                     *   เพื่อทำการเเสดงข้อมูลต่อไป
-                     */
-                    checkingStatus(replyToken, username);
-                } else {
-                    /*
-                     *   กรณีที่สร้างบัญชีผู้ใช้ไว้บน ISE ไม่สำเร็จ ให้ทำการเเจ้งให้กับผู้ใช้ผ่าน LINE API เป็นข้อความ
-                     *   (https://developers.line.biz/en/reference/messaging-api/#send-reply-message)
-                     */
-                    const message = "มีผู้ใช้นี้อยู่ในระบบเเล้ว\nกรุณากด 'ตรวจสอบสถานะ'";
-                    request.post(
-                        {
-                            url: "https://api.line.me/v2/bot/message/reply",
-                            headers: LineHeaders,
-                            body: JSON.stringify({
-                                replyToken: replyToken,
-                                messages: [
-                                    {
-                                        type: "text",
-                                        text: message,
-                                    },
-                                ],
-                            }),
-                        },
-                        (err, res, body) => {
-                            console.log("status = " + res.statusCode);
-                        }
-                    );
-                }
+        const response = await axios.post(ISE_ENDPOINT, payload, { headers: ISEHeaders });
+
+        if (response.status === 201) {
+            // สร้างบัญชีสำเร็จ -> ตรวจสอบสถานะ
+            checkingStatus(replyToken, username);
+        }
+    } catch (error) {
+        if (error.response && error.response.status === 400) {
+            // ผู้ใช้มีอยู่แล้ว -> แจ้งเตือนผ่าน LINE
+            const message = {
+                replyToken,
+                messages: [{ type: "text", text: "มีผู้ใช้นี้อยู่ในระบบเเล้ว\nกรุณากด 'ตรวจสอบสถานะ'" }],
+            };
+
+            try {
+                await axios.post("https://api.line.me/v2/bot/message/reply", message, { headers: LineHeaders });
+                console.log("แจ้งเตือนผู้ใช้เรียบร้อย");
+            } catch (lineError) {
+                console.error("เกิดข้อผิดพลาดในการส่งข้อความ LINE:", lineError.message);
             }
-        );
-    } catch (e) {
-        console.error(e);
+        } else {
+            console.error("เกิดข้อผิดพลาดในการสร้างผู้ใช้ ISE:", error.message);
+        }
     }
 }
 
