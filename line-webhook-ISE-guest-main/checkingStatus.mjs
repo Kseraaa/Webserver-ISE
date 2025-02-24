@@ -36,7 +36,6 @@ function createFlexMessage(userData) {
                     createInfoRow("ใช้ได้ตั้งแต่", fromDate),
                     createInfoRow("จนถึง", toDate),
                     createInfoRow("สถานะ", statusText, statusColor),
-                    createInfoRow("ประเภทผู้ใช้", guestType),
                     ...(status === "ACTIVE" ? [createExtendButton()] : []) //ใช้ ACTIVE เพื่อ TEST ใช้จริงเปลี่ยนเป็น EXPIRED
                 ]
             }
