@@ -9,9 +9,17 @@ function formatDate(date) {
 
 function createFlexMessage(userData) {
     const { name, guestInfo, guestAccessInfo, status, guestType } = userData;
+    const statusText = status === "AWAITING_INITIAL_LOGIN" ? "โปรดลงชื่อเข้าใช้" : status;
     const statusColor = status === "ACTIVE" ? "#1DB446" : "#FF6B6E";
-    const fromDate = formatDate(userData.guestAccessInfo.fromDate);
-    const toDate = formatDate(userData.guestAccessInfo.toDate);
+    const fromDate = userData.guestAccessInfo.fromDate 
+    ? formatDate(userData.guestAccessInfo.fromDate) 
+    : formatDate(new Date()); // ใช้เวลาปัจจุบันแทน
+
+    const toDate = userData.guestAccessInfo.toDate 
+    ? formatDate(userData.guestAccessInfo.toDate) 
+    : formatDate(new Date(Date.now() + 24 * 60 * 60 * 1000)); // ใช้เวลาปัจจุบัน +1 วัน
+
+
 
     return {
         type: "flex",
@@ -27,7 +35,7 @@ function createFlexMessage(userData) {
                     createTextButton("Password", guestInfo.password),
                     createInfoRow("ใช้ได้ตั้งแต่", fromDate),
                     createInfoRow("จนถึง", toDate),
-                    createInfoRow("สถานะ", status, statusColor),
+                    createInfoRow("สถานะ", statusText, statusColor),
                     createInfoRow("ประเภทผู้ใช้", guestType),
                     ...(status === "ACTIVE" ? [createExtendButton()] : []) //ใช้ ACTIVE เพื่อ TEST ใช้จริงเปลี่ยนเป็น EXPIRED
                 ]

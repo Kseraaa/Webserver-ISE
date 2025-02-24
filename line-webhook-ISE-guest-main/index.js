@@ -39,13 +39,16 @@ app.post("/", async (req, res) => {
     // ดึงเเละจัดเก็บข้อมูลส่วนตัวของผู้ใช้ผ่านการเรียกใช้งานฟังก์ชัน getUserProfile(userId: string)
     const userProfile = await getUserProfile(userId);
 
-    //สร้าง username = user+เลข4ตัวเลขของ userID
+    //สร้าง username = username จากชื่อไลน์
     //สร้าง password = user2ตัวเเรก + เลข4ตัวสุดท้ายของ userID
-    const username = "user-" + userProfile.userId.slice(0, 4);
+    const username = userProfile.displayName.replace(/\s/g, ""); 
     const password = userProfile.userId.slice(0, 2) + userProfile.userId.replace(/\D/g, "").slice(-4);
+     // ดึงค่า displayName จากข้อมูลผู้ใช้
+     const displayName = userProfile.displayName;  
 
-    console.log(username, password);
-
+     console.log(`👤 UserName: ${username}`);
+     console.log(`👤 User Display Name: ${displayName}`);
+ 
     // ส่วนสำหรับการเเบ่งการทำงานตามคำสั่งต่าง ๆ ที่ผู้ใช้ request 
     switch (message) {
         case "ขอใช้บริการ":
