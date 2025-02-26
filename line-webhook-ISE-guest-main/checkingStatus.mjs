@@ -8,7 +8,9 @@ function formatDate(date) {
 }
 
 function createFlexMessage(userData) {
-    const { name, guestInfo, guestAccessInfo, status, guestType } = userData;
+    const { name, guestInfo, status, } = userData;
+    const firstName = guestInfo.firstName || name || "N/A";  // ใช้ชื่อแรก ถ้าไม่มีให้ใช้ชื่อหลักของ user
+
     const statusText = status === "AWAITING_INITIAL_LOGIN" ? "โปรดลงชื่อเข้าใช้" : status;
     const statusColor = status === "ACTIVE" ? "#1DB446" : "#FF6B6E";
     const fromDate = userData.guestAccessInfo.fromDate 
@@ -18,8 +20,6 @@ function createFlexMessage(userData) {
     const toDate = userData.guestAccessInfo.toDate 
     ? formatDate(userData.guestAccessInfo.toDate) 
     : formatDate(new Date(Date.now() + 24 * 60 * 60 * 1000)); // ใช้เวลาปัจจุบัน +1 วัน
-
-
 
     return {
         type: "flex",
@@ -33,6 +33,7 @@ function createFlexMessage(userData) {
                     { type: "separator", margin: "md" },
                     createTextButton("Username", name),
                     createTextButton("Password", guestInfo.password),
+                    createInfoRow("ชื่อผู้ใช้", firstName),
                     createInfoRow("ใช้ได้ตั้งแต่", fromDate),
                     createInfoRow("จนถึง", toDate),
                     createInfoRow("ชื่อ WiFi:", "Guest-test"),
