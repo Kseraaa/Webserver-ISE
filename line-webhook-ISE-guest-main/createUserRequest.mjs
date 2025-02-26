@@ -8,9 +8,6 @@ async function createUserRequest(replyToken, username, password, firstName) {
     const fromDate = DateTime.now();
     const toDate = fromDate.plus({ days: 1 });
 
-    console.log(fromDate.toISO());
-    console.log(toDate.toISO());
-
     const payload = {
         GuestUser: {
             name: "",
