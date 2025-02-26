@@ -35,6 +35,7 @@ function createFlexMessage(userData) {
                     createTextButton("Password", guestInfo.password),
                     createInfoRow("ใช้ได้ตั้งแต่", fromDate),
                     createInfoRow("จนถึง", toDate),
+                    createInfoRow("ชื่อ WiFi:", "Guest-test"),
                     createInfoRow("สถานะ", statusText, statusColor),
                     ...(status === "ACTIVE" ? [createExtendButton()] : []) //ใช้ ACTIVE เพื่อ TEST ใช้จริงเปลี่ยนเป็น EXPIRED
                 ]

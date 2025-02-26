@@ -4,7 +4,7 @@ import checkingStatus from "./checkingStatus.mjs";
 import { DateTime } from "luxon";
 
 // ฟังก์ชันสำหรับการสร้างผู้ใช้ให้กับ Cisco ISE ผ่าน API
-async function createUserRequest(replyToken, username, password) {
+async function createUserRequest(replyToken, username, password, firstName) {
     const fromDate = DateTime.now();
     const toDate = fromDate.plus({ days: 1 });
 
@@ -21,6 +21,7 @@ async function createUserRequest(replyToken, username, password) {
                 userName: username,
                 password: password,
                 enabled: true,
+                firstName: firstName,
             },
             guestAccessInfo: {
                 validDays: 1,
