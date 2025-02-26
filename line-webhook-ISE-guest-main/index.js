@@ -66,7 +66,7 @@ app.post("/", async (req, res) => {
     console.log(`👤 FirstName: ${firstName}`);
 
     // 📌 ตรวจสอบว่าเป็นเบอร์มือถือหรือไม่
-    const phoneMatch = message.match(/\d{10,15}/);
+    const phoneMatch = message.match(/\d{10}/);
     if (phoneMatch) {
         const phoneNumber = `+66${phoneMatch[0].slice(1)}`;
         savePhoneNumber(userId, phoneNumber);
