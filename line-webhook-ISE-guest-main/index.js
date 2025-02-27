@@ -8,6 +8,7 @@ import createUserRequest from "./createUserRequest.mjs";
 import updateUserAccount from "./updateUserAccount.mjs";
 import { LineHeaders } from "./utils.mjs";
 import slugify from "slugify";
+import UserPhone from "./UserPhone.js";
 
 
 // โหลดค่าตัวแปรจากไฟล์ .env
@@ -19,17 +20,37 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.urlencoded({ extended: false }));//รองรับข้อมูลจากฟอร์มแบบ x-www-form-urlencoded
 app.use(bodyParser.json());// รองรับข้อมูล JSON
 
-const userPhoneNumbers = {}; //ตัวแปรเก็บเบอร์โทรของผู้ใช้ (ใช้ฐานข้อมูลจริงจะดีกว่า)
-
 //ฟังก์ชันบันทึกเบอร์โทร
-function savePhoneNumber(userId, phoneNumber) {
-    userPhoneNumbers[userId] = phoneNumber;
+async function savePhoneNumber(userId, phoneNumber, displayName) {
+    try {
+        let user = await UserPhone.findOne({ userId });
+
+        if (user) {
+            user.phoneNumber = phoneNumber;
+            user.displayName = displayName; // ใช้ displayName แทน firstName
+        } else {
+            user = new UserPhone({ userId, phoneNumber, displayName });
+        }
+
+        await user.save();
+        console.log(`✅ เบอร์โทรของ ${userId} ถูกบันทึกแล้ว: ${phoneNumber}`);
+    } catch (err) {
+        console.error("❌ เกิดข้อผิดพลาดในการบันทึกเบอร์โทร:", err);
+    }
 }
+
 
 // ฟังก์ชันดึงเบอร์โทร
-function getPhoneNumber(userId) {
-    return userPhoneNumbers[userId] || null;
+async function getPhoneNumber(userId) {
+    try {
+        const user = await UserPhone.findOne({ userId });
+        return user ? user.phoneNumber : null;
+    } catch (err) {
+        console.error("❌ เกิดข้อผิดพลาดในการดึงเบอร์โทร:", err);
+        return null;
+    }
 }
+
 
 // ฟังก์ชันดึงข้อมูลโปรไฟล์ LINE
 async function getUserProfile(userId) {
@@ -69,13 +90,13 @@ app.post("/", async (req, res) => {
     const phoneMatch = message.match(/\d{10}/);
     if (phoneMatch) {
         const phoneNumber = `+66${phoneMatch[0].slice(1)}`;
-        savePhoneNumber(userId, phoneNumber);
+        savePhoneNumber(userId, phoneNumber, userProfile.displayName);
         return sendLineMessage(replyToken, `📲 บันทึกเบอร์ ${phoneNumber} เรียบร้อย! กรุณากดขอใช้บริการอีกครั้ง`);
     }
 
     switch (message) {
         case "ขอใช้บริการ":
-            const storedPhone = getPhoneNumber(userId);
+            const storedPhone = await getPhoneNumber(userId);
             if (!storedPhone) {
                 return sendLineMessage(replyToken, "⚠️ กรุณาพิมพ์เบอร์มือถือก่อน เช่น 0987654321");
             }
