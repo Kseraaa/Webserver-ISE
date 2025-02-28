@@ -34,11 +34,11 @@ function createFlexMessage(userData) {
                     createTextButton("Username", name),
                     createTextButton("Password", guestInfo.password),
                     createInfoRow("ชื่อผู้ใช้", firstName),
+                    createInfoRow("ชื่อ WiFi:", "Guest-test"),
                     createInfoRow("ใช้ได้ตั้งแต่", fromDate),
                     createInfoRow("จนถึง", toDate),
-                    createInfoRow("ชื่อ WiFi:", "Guest-test"),
                     createInfoRow("สถานะ", statusText, statusColor),
-                    ...(status === "ACTIVE" ? [createExtendButton()] : []) //ใช้ ACTIVE เพื่อ TEST ใช้จริงเปลี่ยนเป็น EXPIRED
+                    ...(status === "EXPIRED" ? [createExtendButton()] : []) //ใช้ ACTIVE เพื่อ TEST ใช้จริงเปลี่ยนเป็น EXPIRED
                 ]
             }
         }

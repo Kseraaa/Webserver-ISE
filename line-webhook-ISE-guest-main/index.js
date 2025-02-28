@@ -75,7 +75,7 @@ app.post("/", async (req, res) => {
     const userProfile = await getUserProfile(userId);
     if (!userProfile) return res.sendStatus(200);
 
-    const username = "user-" + userProfile.userId.slice(0, 5); //กำหนด username ที่จะตั้งเป็น user+USERID 5 ตัวแรก
+    const username = "U-" + userProfile.userId.slice(0, 5); //กำหนด username ที่จะตั้งเป็น U+USERID 5 ตัวแรก
     const password = userProfile.userId.slice(0, 2) + userProfile.userId.replace(/\D/g, "").slice(-4);// กำหนด password เป็น USERID 2 ตัวแรก + ตัวเลขจาก USERID 4 ตัวท้าย
     const firstName = slugify(userProfile.displayName, {
         replacement: "", // ลบอักขระที่ไม่ต้องการ
@@ -83,8 +83,8 @@ app.post("/", async (req, res) => {
         lower: false, // ไม่ต้องแปลงเป็นตัวพิมพ์เล็ก
     });
 
-    console.log(`👤 Username: ${username}`);
-    console.log(`👤 FirstName: ${firstName}`);
+    console.log(`Username: ${username}`);
+    console.log(`FirstName: ${firstName}`);
 
     // 📌 ตรวจสอบว่าเป็นเบอร์มือถือหรือไม่
     const phoneMatch = message.match(/\d{10}/);
